@@ -576,6 +576,9 @@ function App() {
             <p style={{ fontStyle: 'italic', color: 'var(--accent-glow)' }}>
               "Your environment is your ultimate operating system. Design it with intention."
             </p>
+            <p style={{ marginTop: '40px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', fontSize: '1rem', color: '#888' }}>
+              Developed by <strong>Nouraiz Ashraf</strong>
+            </p>
           </div>
         </div>
       </div>
