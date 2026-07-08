@@ -1,0 +1,121 @@
+/* =========================================
+   Article View (Blog Post)
+   ========================================= */
+.article-view {
+    min-height: 100vh;
+    padding-bottom: 120px;
+    animation: fadeUp 0.6s ease-out forwards;
+}
+
+.back-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-family: var(--font-main);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.back-btn:hover {
+    color: var(--accent-glow);
+}
+
+.article-hero {
+    height: 60vh;
+    min-height: 400px;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 60px 24px;
+}
+
+.article-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(5,5,5,1) 0%, rgba(5,5,5,0.4) 100%);
+}
+
+.article-hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.article-hero-content h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1.1;
+    margin-top: 16px;
+}
+
+.article-body {
+    max-width: 800px;
+    margin: 60px auto 0;
+    padding: 0 24px;
+    font-size: 1.25rem;
+    line-height: 1.8;
+    color: #D1D1D6;
+}
+
+.article-body p {
+    margin-bottom: 24px;
+}
+
+.article-body h3 {
+    font-size: 1.75rem;
+    color: var(--text-main);
+    margin: 40px 0 16px;
+}
+
+.article-body ul, .article-body ol {
+    margin-bottom: 32px;
+    padding-left: 24px;
+}
+
+.article-body li {
+    margin-bottom: 12px;
+}
+
+.article-category {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(0,0,0,0.5);
+    padding: 6px 12px;
+    border-radius: 100px;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--bento-border);
+    display: inline-block;
+    margin-bottom: 16px;
+}
+
+.navbar-divider {
+    color: rgba(255, 255, 255, 0.2);
+    margin: 0 4px;
+}
+
+.download-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-family: var(--font-main);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.download-btn:hover {
+    color: var(--accent-glow);
+}
