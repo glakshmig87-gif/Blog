@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import './article.css';
 
 function App() {
@@ -121,8 +122,24 @@ function App() {
   const activeBlog = activePostId ? blogs.find(b => b._id === activePostId) : null;
   if (activeBlog) {
     const post = activeBlog;
+    // Strip HTML from content for meta description
+    const plainTextContent = post.content ? post.content.replace(new RegExp('<[^>]*>', 'g'), '').substring(0, 150) + '...' : 'Discover luxury interior design and homedecor curated specifically for ' + post.category;
+    
     return (
       <div className="article-view">
+        <Helmet>
+          <title>{post.title} | Curated Corners</title>
+          <meta name="description" content={plainTextContent} />
+          <meta name="keywords" content={`homedecor, ${post.category}, interior design, luxury decor`} />
+          <meta property="og:title" content={`${post.title} | Curated Corners`} />
+          <meta property="og:description" content={plainTextContent} />
+          <meta property="og:image" content={post.image} />
+          <meta property="og:type" content="article" />
+          <meta property="twitter:title" content={`${post.title} | Curated Corners`} />
+          <meta property="twitter:description" content={plainTextContent} />
+          <meta property="twitter:image" content={post.image} />
+          <link rel="canonical" href={`https://curatedcorners.com/#post-${post._id}`} />
+        </Helmet>
         <div className="navbar-wrapper">
           <nav className="navbar-pill">
             <a href="/" className="back-btn" style={{ textDecoration: 'none' }}>
@@ -155,6 +172,13 @@ function App() {
   if (activeView === 'buy') {
     return (
       <div className="buy-view" style={{ minHeight: '100vh', position: 'relative', padding: '100px 24px', animation: 'fadeUp 0.6s ease-out forwards' }}>
+        <Helmet>
+          <title>Shop The Aesthetic | Curated Corners Homedecor</title>
+          <meta name="description" content="Shop exclusive homedecor, luxury furniture, and aesthetic lighting hand-selected by our architects. Elevate your space with Curated Corners." />
+          <meta name="keywords" content="homedecor, luxury furniture, buy aesthetic decor, shop interior design, modern lighting" />
+          <meta property="og:title" content="Shop The Aesthetic | Curated Corners Homedecor" />
+          <link rel="canonical" href="https://curatedcorners.com/#buy" />
+        </Helmet>
         <div style={{ position: 'absolute', top: '32px', left: '32px' }}>
           <a href="/" className="back-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', textDecoration: 'none' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -501,6 +525,12 @@ function App() {
   if (activeView === 'about') {
     return (
       <div className="about-view" style={{ minHeight: '100vh', position: 'relative', padding: '100px 24px', animation: 'fadeUp 0.6s ease-out forwards' }}>
+        <Helmet>
+          <title>About Us | Curated Corners</title>
+          <meta name="description" content="Learn about Curated Corners, our mission in neuro-architecture, and our passion for dark luxury homedecor." />
+          <meta name="keywords" content="about curated corners, homedecor mission, neuro-architecture, luxury interior design" />
+          <link rel="canonical" href="https://curatedcorners.com/#about" />
+        </Helmet>
         <div style={{ position: 'absolute', top: '32px', left: '32px' }}>
           <a href="/" className="back-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', textDecoration: 'none' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -529,6 +559,12 @@ function App() {
   // Otherwise, render the Bento Grid
   return (
     <>
+      <Helmet>
+        <title>Curated Corners | Luxury Interior Design & Homedecor</title>
+        <meta name="description" content="Discover luxury interior design, modern homedecor, and neuro-architecture. Shop our exclusive collection of aesthetic furniture and decor." />
+        <meta name="keywords" content="homedecor, interior design, modern furniture, luxury living spaces, neuro-architecture, curated spaces, aesthetic decor" />
+        <link rel="canonical" href="https://curatedcorners.com/" />
+      </Helmet>
       <div className="navbar-wrapper">
         <nav className="navbar-pill">
           <a href="#" className="logo-link">
