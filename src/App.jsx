@@ -14,7 +14,7 @@ function App() {
 
   useEffect(() => {
     // Fetch products
-    fetch('http://localhost:5000/api/products?all=true')
+    fetch('/api/products?all=true')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setProducts(data);
@@ -22,7 +22,7 @@ function App() {
       .catch(err => console.error("Failed to load products from database:", err));
 
     // Fetch blogs
-    fetch('http://localhost:5000/api/blogs')
+    fetch('/api/blogs')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setBlogs(data);
@@ -281,7 +281,7 @@ function App() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/products', {
+        const response = await fetch('/api/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newProduct)
@@ -320,7 +320,7 @@ function App() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/blogs', {
+        const response = await fetch('/api/blogs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newBlog)
@@ -341,16 +341,17 @@ function App() {
     };
 
     const handleDeleteBlog = async (blogId) => {
-      if (!window.confirm("Are you sure you want to delete this blog?")) return;
-      try {
-        const response = await fetch(`http://localhost:5000/api/blogs/${blogId}`, { method: 'DELETE' });
-        if (response.ok) {
-          setBlogs(prev => prev.filter(b => b._id !== blogId));
-        } else {
-          alert("Failed to delete blog.");
+      if (window.confirm("Are you sure you want to delete this blog?")) {
+        try {
+          const response = await fetch(`/api/blogs/${blogId}`, { method: 'DELETE' });
+          if (response.ok) {
+            setBlogs(prev => prev.filter(b => b._id !== blogId));
+          } else {
+            alert("Failed to delete blog.");
+          }
+        } catch (err) {
+          console.error(err);
         }
-      } catch (err) {
-        console.error(err);
       }
     };
 
@@ -361,8 +362,8 @@ function App() {
     const confirmDelete = async () => {
       if (productToDelete && productToDelete._id) {
         try {
-          const response = await fetch(`http://localhost:5000/api/products/${productToDelete._id}`, {
-            method: 'DELETE'
+          const response = await fetch(`/api/products/${productToDelete._id}`, {
+            method: 'DELETE',
           });
 
           if (response.ok) {
