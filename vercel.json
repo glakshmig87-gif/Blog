@@ -18,6 +18,7 @@
     { "source": "/sitemap.xml",  "destination": "/server/server.js" },
     { "source": "/feed.json",    "destination": "/server/server.js" },
     { "source": "/llms.txt",     "destination": "/server/server.js" },
+    { "source": "/googleaedea19e1d562155.html", "destination": "/googleaedea19e1d562155.html" },
     { "source": "/:path*",       "destination": "/index.html" }
   ]
 }
