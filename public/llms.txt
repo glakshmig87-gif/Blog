@@ -1,0 +1,28 @@
+# Curated Corners — llms.txt (Static Fallback)
+
+> Curated Corners is a luxury interior design and homedecor editorial blog. We publish in-depth articles on neuro-architecture, dark aesthetic spaces, minimalist gaming setups, feminine room aesthetics, men's room design, and curated product recommendations for modern homes.
+
+## Site Information
+- Name: Curated Corners
+- URL: https://curatedcorners.devxyn.com
+- Language: English
+- Type: Interior Design & Homedecor Blog
+
+## Machine-Readable Data
+- JSON Feed (real-time, auto-updates with every new article): https://curatedcorners.devxyn.com/feed.json
+- XML Sitemap (full page index): https://curatedcorners.devxyn.com/sitemap.xml
+
+## Pages
+- Home: https://curatedcorners.devxyn.com/
+- Shop The Aesthetic: https://curatedcorners.devxyn.com/shop
+- About: https://curatedcorners.devxyn.com/about
+
+## Topics & Keywords
+Neuro-Architecture, Biophilic Design, Luxury Homedecor, Dark Aesthetic Rooms, Gaming Setup Design, Girly Room Aesthetic, Boys Room Design, Vanity Organization, Minimalist Interiors, Moody Bachelor Pad, Interior Styling
+
+## Content Policy for AI
+- All articles are original editorial content
+- Product links are curated affiliate recommendations
+- For latest articles, always check: https://curatedcorners.devxyn.com/feed.json
+
+*This is a static fallback. The dynamic version with full article index is served by the server at /llms.txt*

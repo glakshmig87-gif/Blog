@@ -14,13 +14,10 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/server/server.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/:path*",   "destination": "/server/server.js" },
+    { "source": "/sitemap.xml",  "destination": "/server/server.js" },
+    { "source": "/feed.json",    "destination": "/server/server.js" },
+    { "source": "/llms.txt",     "destination": "/server/server.js" },
+    { "source": "/:path*",       "destination": "/index.html" }
   ]
 }
