@@ -28,7 +28,141 @@ function formatDate(dateStr) {
 // ============================================================
 // ARTICLE VIEW
 // ============================================================
-function ArticleView({ blogs }) {
+// FLOATING MORPHING PRODUCT WIDGET
+// ============================================================
+function FloatingProductWidget({ products }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (!products || products.length === 0) return null;
+  const activeProduct = products[currentIndex] || products[0];
+
+  return (
+    <div
+      className={`floating-product-widget ${isHovered ? 'expanded' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => setIsHovered(prev => !prev)}
+      style={{
+        position: 'fixed',
+        bottom: '32px',
+        right: '32px',
+        zIndex: 9999,
+        background: 'rgba(18, 18, 20, 0.85)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
+        borderRadius: isHovered ? '24px' : '100px',
+        padding: isHovered ? '20px' : '12px 24px',
+        width: isHovered ? '320px' : 'auto',
+        boxShadow: isHovered
+          ? '0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(142, 161, 149, 0.3)'
+          : '0 12px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.1)',
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        overflow: 'hidden',
+        cursor: 'pointer'
+      }}
+    >
+      {!isHovered ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🛍️</span>
+          <span style={{ fontWeight: '600', fontSize: '0.95rem', color: '#fff' }}>
+            Shop Featured Item {products.length > 1 ? `(${products.length})` : ''}
+          </span>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 10px #4ade80' }}></span>
+        </div>
+      ) : (
+        <div style={{ animation: 'fadeUp 0.3s ease-out forwards' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', fontWeight: '600' }}>
+              Featured Decor {products.length > 1 ? `(${currentIndex + 1}/${products.length})` : ''}
+            </span>
+            {products.length > 1 && (
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndex(prev => (prev > 0 ? prev - 1 : products.length - 1));
+                  }}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: '26px', height: '26px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  &larr;
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndex(prev => (prev < products.length - 1 ? prev + 1 : 0));
+                  }}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: '26px', height: '26px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  &rarr;
+                </button>
+              </div>
+            )}
+          </div>
+
+          {activeProduct.image && (
+            <div
+              style={{
+                height: '160px',
+                backgroundImage: `url(${activeProduct.image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                borderRadius: '16px',
+                marginBottom: '14px',
+                border: '1px solid rgba(255,255,255,0.08)'
+              }}
+            />
+          )}
+
+          <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '6px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {activeProduct.title}
+          </h4>
+
+          {activeProduct.description && (
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.4' }}>
+              {activeProduct.description}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+            <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#fff' }}>
+              {activeProduct.price}
+            </span>
+            <a
+              href={activeProduct.link}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                padding: '10px 20px',
+                background: '#fff',
+                color: '#000',
+                borderRadius: '100px',
+                fontWeight: 'bold',
+                textDecoration: 'none',
+                fontSize: '0.85rem',
+                transition: 'transform 0.2s',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              Buy Now &rarr;
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// ARTICLE VIEW
+// ============================================================
+function ArticleView({ blogs, products = [] }) {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
@@ -197,6 +331,9 @@ function ArticleView({ blogs }) {
           <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }} dangerouslySetInnerHTML={{ __html: post.content }} />
         </div>
       </article>
+
+      {/* Floating Morphing Product Card Widget */}
+      <FloatingProductWidget products={(post.linkedProducts && post.linkedProducts.length > 0) ? post.linkedProducts : products} />
     </div>
   );
 }
@@ -1129,7 +1266,7 @@ function App() {
       />
       <Route
         path="/blog/:slug"
-        element={<ArticleView blogs={blogs} />}
+        element={<ArticleView blogs={blogs} products={products} />}
       />
       <Route
         path="/shop"
