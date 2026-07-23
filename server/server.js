@@ -72,22 +72,17 @@ const blogSchema = new mongoose.Schema({
 });
 
 // Auto-generate unique slug before save
-blogSchema.pre('save', async function (next) {
+blogSchema.pre('save', async function () {
   if (!this.slug) {
     let baseSlug = generateSlug(this.title);
     let slug = baseSlug;
     let count = 1;
-    try {
-      while (await mongoose.model('Blog').findOne({ slug, _id: { $ne: this._id } })) {
-        slug = `${baseSlug}-${count++}`;
-      }
-      this.slug = slug;
-    } catch (err) {
-      return next(err);
+    while (await mongoose.model('Blog').findOne({ slug, _id: { $ne: this._id } })) {
+      slug = `${baseSlug}-${count++}`;
     }
+    this.slug = slug;
   }
   this.updatedAt = new Date();
-  next();
 });
 
 const Blog = mongoose.model('Blog', blogSchema);
@@ -345,12 +340,43 @@ app.delete('/api/products/:id', async (req, res) => {
 
 // Get all blogs
 app.get('/api/blogs', async (req, res) => {
+  console.log('GET /api/blogs called');
+  console.time('Get Blogs');
   try {
-    const blogs = await Blog.find().sort({ createdAt: 1 }).populate('linkedProducts');
+    // Exclude content AND image to reduce payload size to practically nothing. The client will lazy-load the image.
+    const blogs = await Blog.find().select('-content -image').sort({ createdAt: 1 });
+    console.timeEnd('Get Blogs');
     res.json(blogs);
   } catch (error) {
     console.error('Get blogs error:', error);
     res.status(500).json({ error: 'Failed to fetch blogs' });
+  }
+});
+
+// Get blog image
+app.get('/api/blogs/slug/:slug/image', async (req, res) => {
+  try {
+    const isObjectId = mongoose.Types.ObjectId.isValid(req.params.slug);
+    const query = isObjectId ? { _id: req.params.slug } : { slug: req.params.slug };
+    const blog = await Blog.findOne(query).select('image');
+    if (!blog || !blog.image) return res.status(404).send('Not found');
+
+    if (blog.image.startsWith('http') || blog.image.startsWith('/')) {
+      return res.redirect(blog.image);
+    }
+
+    const parts = blog.image.split(';');
+    if (parts.length < 2) return res.status(400).send('Invalid image format');
+    const mimeType = parts[0].split(':')[1];
+    const base64Data = parts[1].replace('base64,', '');
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    res.set('Content-Type', mimeType);
+    res.set('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    res.send(buffer);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
   }
 });
 

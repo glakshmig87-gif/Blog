@@ -26,3 +26,7 @@ dist-ssr
 server/node_modules
 server/.env
 node_modules_old
+
+# Testing
+playwright-report/
+test-results/

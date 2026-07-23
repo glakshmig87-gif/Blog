@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useParams, useNavigate, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import './article.css';
 
@@ -31,9 +31,28 @@ function formatDate(dateStr) {
 function ArticleView({ blogs }) {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // While blogs are loading from the API, show a minimal loader
-  if (blogs.length === 0) {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    setLoading(true);
+    fetch(`/api/blogs/slug/${slug}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Not found');
+        return res.json();
+      })
+      .then(data => {
+        setPost(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, [slug]);
+
+  if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Loading article...</div>
@@ -41,11 +60,8 @@ function ArticleView({ blogs }) {
     );
   }
 
-  const post = blogs.find(b => b.slug === slug);
-
   if (!post) {
-    navigate('/', { replace: true });
-    return null;
+    return <Navigate to="/404" replace />;
   }
 
   const safeImage = getSafeImageUrl(post.image);
@@ -178,7 +194,7 @@ function ArticleView({ blogs }) {
         </div>
 
         <div className="article-body" itemProp="articleBody">
-          <div dangerouslySetInnerHTML={{ __html: post.content }} />
+          <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }} dangerouslySetInnerHTML={{ __html: post.content }} />
         </div>
       </article>
     </div>
@@ -290,7 +306,7 @@ function HomeView({ blogs, visibleBlogsCount, setVisibleBlogsCount }) {
                   >
                     <div
                       className="box-image-bg"
-                      style={{ backgroundImage: `url(${blog.image})` }}
+                      style={{ backgroundImage: `url(/api/blogs/slug/${blog.slug || blog._id}/image)` }}
                       role="img"
                       aria-label={`Cover image for ${blog.title}`}
                     ></div>
@@ -497,6 +513,11 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
   const [loginPassword, setLoginPassword] = useState('');
   const [productToDelete, setProductToDelete] = useState(null);
 
+  const [editingBlogId, setEditingBlogId] = useState(null);
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
   const [newBlog, setNewBlog] = useState({
     title: '',
     category: '',
@@ -603,26 +624,63 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
       return;
     }
     try {
-      const response = await fetch('/api/blogs', {
-        method: 'POST',
+      const isEditing = !!editingBlogId;
+      const url = isEditing ? `/api/blogs/${editingBlogId}` : '/api/blogs';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newBlog,
-          tags: newBlog.tags ? newBlog.tags.split(',').map(t => t.trim()).filter(Boolean) : []
+          tags: newBlog.tags ? (typeof newBlog.tags === 'string' ? newBlog.tags.split(',').map(t => t.trim()).filter(Boolean) : newBlog.tags) : []
         })
       });
       if (response.ok) {
         const savedBlog = await response.json();
-        setBlogs(prev => [...prev, savedBlog]);
+        if (isEditing) {
+          setBlogs(prev => prev.map(b => b._id === editingBlogId ? savedBlog : b));
+          setEditingBlogId(null);
+        } else {
+          setBlogs(prev => [...prev, savedBlog]);
+        }
         setNewBlog({ title: '', category: '', readTime: '', image: '', content: '', metaDescription: '', tags: '', linkedProducts: [] });
-        alert('Blog saved successfully!');
+        alert(isEditing ? 'Blog updated successfully!' : 'Blog saved successfully!');
       } else {
-        alert('Failed to save blog.');
+        alert(isEditing ? 'Failed to update blog.' : 'Failed to save blog.');
       }
     } catch (error) {
-      console.error('Add blog error:', error);
+      console.error('Add/Update blog error:', error);
       alert('Error connecting to database');
     }
+  };
+
+  const startEditBlog = async (blog) => {
+    try {
+      const res = await fetch(`/api/blogs/slug/${blog.slug || blog._id}`);
+      if (!res.ok) throw new Error('Failed to fetch full blog data');
+      const fullBlog = await res.json();
+      
+      setEditingBlogId(fullBlog._id);
+      setNewBlog({
+        title: fullBlog.title || '',
+        category: fullBlog.category || '',
+        readTime: fullBlog.readTime || '',
+        image: fullBlog.image || '',
+        content: fullBlog.content || '',
+        metaDescription: fullBlog.metaDescription || '',
+        tags: fullBlog.tags ? (Array.isArray(fullBlog.tags) ? fullBlog.tags.join(', ') : fullBlog.tags) : '',
+        linkedProducts: fullBlog.linkedProducts ? fullBlog.linkedProducts.map(p => p._id || p) : []
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      alert('Error fetching full blog details for editing.');
+    }
+  };
+
+  const cancelEditBlog = () => {
+    setEditingBlogId(null);
+    setNewBlog({ title: '', category: '', readTime: '', image: '', content: '', metaDescription: '', tags: '', linkedProducts: [] });
   };
 
   const handleDeleteBlog = async (blogId) => {
@@ -709,8 +767,8 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
       <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'left' }}>
         {/* BLOG MANAGEMENT */}
         <div style={{ background: 'var(--bento-bg)', padding: '40px', borderRadius: '24px', border: '1px solid var(--bento-border)', backdropFilter: 'blur(10px)', marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Manage Blogs</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>Create new articles and link products.</p>
+          <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>{editingBlogId ? 'Edit Blog' : 'Manage Blogs'}</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>{editingBlogId ? 'Update this article.' : 'Create new articles and link products.'}</p>
 
           <form onSubmit={handleAddBlog}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Cover Image</label>
@@ -756,32 +814,79 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
               placeholder="e.g. luxury, dark aesthetic, minimalist"
             />
 
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Content (HTML Allowed)</label>
-            <textarea value={newBlog.content} onChange={e => setNewBlog({ ...newBlog, content: e.target.value })} style={{ ...inputStyle, minHeight: '150px', resize: 'vertical' }} placeholder="<p>Write your article here...</p>" required />
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Content</label>
+            <textarea value={newBlog.content} onChange={e => setNewBlog({ ...newBlog, content: e.target.value })} style={{ ...inputStyle, minHeight: '150px', resize: 'vertical' }} placeholder="Write your article here..." required />
 
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Link Products</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px', maxHeight: '200px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
-              {products.map(p => (
-                <label key={p._id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={newBlog.linkedProducts.includes(p._id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setNewBlog(prev => ({ ...prev, linkedProducts: [...prev.linkedProducts, p._id] }));
-                      } else {
-                        setNewBlog(prev => ({ ...prev, linkedProducts: prev.linkedProducts.filter(id => id !== p._id) }));
-                      }
-                    }}
-                  />
-                  <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
-                </label>
-              ))}
+            <div style={{ position: 'relative', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: newBlog.linkedProducts.length ? '8px' : '0' }}>
+                {newBlog.linkedProducts.map(productId => {
+                  const p = products.find(prod => prod._id === productId);
+                  if (!p) return null;
+                  return (
+                    <div key={productId} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '100px', fontSize: '0.9rem' }}>
+                      {p.title}
+                      <button type="button" onClick={() => setNewBlog(prev => ({ ...prev, linkedProducts: prev.linkedProducts.filter(id => id !== productId) }))} style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                        &times;
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <input
+                type="text"
+                value={productSearch}
+                onChange={e => {
+                  setProductSearch(e.target.value);
+                  setShowProductDropdown(true);
+                }}
+                onFocus={() => setShowProductDropdown(true)}
+                onBlur={() => setTimeout(() => setShowProductDropdown(false), 200)}
+                style={inputStyle}
+                placeholder="Search and select products to link..."
+              />
+              {showProductDropdown && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bento-bg)', border: '1px solid var(--bento-border)', borderRadius: '12px', marginTop: '4px', maxHeight: '200px', overflowY: 'auto', zIndex: 10, backdropFilter: 'blur(10px)' }}>
+                  {products.filter(p => p.title.toLowerCase().includes(productSearch.toLowerCase()) && !newBlog.linkedProducts.includes(p._id)).length > 0 ? (
+                    products
+                      .filter(p => p.title.toLowerCase().includes(productSearch.toLowerCase()) && !newBlog.linkedProducts.includes(p._id))
+                      .map(p => (
+                        <div
+                          key={p._id}
+                          onClick={() => {
+                            setNewBlog(prev => ({ ...prev, linkedProducts: [...prev.linkedProducts, p._id] }));
+                            setProductSearch('');
+                            setShowProductDropdown(false);
+                          }}
+                          style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', fontSize: '0.95rem', transition: 'background 0.2s' }}
+                          onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                        >
+                          {p.title}
+                        </div>
+                      ))
+                  ) : (
+                    <div style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
+                      No matching products found
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            <button type="submit" style={{ width: '100%', padding: '16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
-              Publish Blog
-            </button>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <button type="button" onClick={() => setIsPreviewOpen(true)} style={{ flex: 1, padding: '16px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
+                Preview Article
+              </button>
+              <button type="submit" style={{ flex: 1, padding: '16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
+                {editingBlogId ? 'Update Blog' : 'Publish Blog'}
+              </button>
+              {editingBlogId && (
+                <button type="button" onClick={cancelEditBlog} style={{ flex: 1, padding: '16px', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
 
           <h3 style={{ fontSize: '1.5rem', margin: '32px 0 16px' }}>Existing Blogs</h3>
@@ -795,9 +900,14 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
                     {blog.slug && <span style={{ marginLeft: '8px', color: '#4ade80', fontSize: '0.8rem' }}>✓ /blog/{blog.slug}</span>}
                   </span>
                 </div>
-                <button onClick={() => handleDeleteBlog(blog._id)} style={{ background: 'rgba(255, 68, 68, 0.2)', color: '#ff4444', border: '1px solid rgba(255, 68, 68, 0.5)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-                  Delete
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => startEditBlog(blog)} style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.5)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    Edit
+                  </button>
+                  <button onClick={() => handleDeleteBlog(blog._id)} style={{ background: 'rgba(255, 68, 68, 0.2)', color: '#ff4444', border: '1px solid rgba(255, 68, 68, 0.5)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -876,6 +986,39 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
           </div>
         </div>
       )}
+
+      {/* Preview Article Modal */}
+      {isPreviewOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'var(--bg-color)', zIndex: 1000, overflowY: 'auto' }}>
+          <div style={{ position: 'sticky', top: 0, padding: '16px', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+            <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Article Preview</h2>
+            <button type="button" onClick={() => setIsPreviewOpen(false)} style={{ background: 'var(--accent-glow)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '100px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Close Preview
+            </button>
+          </div>
+          <div style={{ padding: '0', maxWidth: '800px', margin: '0 auto' }}>
+            <article className="article-container">
+              <div className="article-hero" style={{ backgroundImage: `url(${getSafeImageUrl(newBlog.image)})` }}>
+                <div className="article-hero-overlay"></div>
+                <div className="article-hero-content">
+                  <span className="article-category">{newBlog.category || 'Category'}</span>
+                  <h1>{newBlog.title || 'Untitled Article'}</h1>
+                  <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '0.85rem', opacity: 0.8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <time style={{ color: '#fff' }}>Just now</time>
+                    <span style={{ color: '#fff' }}>•</span>
+                    <span style={{ color: '#fff' }}>{newBlog.readTime || '3 min read'}</span>
+                    <span style={{ color: '#fff' }}>•</span>
+                    <span style={{ color: '#fff' }}>Curated Corners</span>
+                  </div>
+                </div>
+              </div>
+              <div className="article-body">
+                <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }} dangerouslySetInnerHTML={{ __html: newBlog.content || '<p style="color: var(--text-muted)">Content will appear here...</p>' }} />
+              </div>
+            </article>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -891,14 +1034,20 @@ function App() {
 
   useEffect(() => {
     fetch('/api/products?all=true')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
       .then(data => { if (Array.isArray(data)) setProducts(data); })
-      .catch(err => console.error('Failed to load products:', err));
+      .catch(err => console.error('Failed to load products:', err.message));
 
     fetch('/api/blogs')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
       .then(data => { if (Array.isArray(data)) setBlogs(data); })
-      .catch(err => console.error('Failed to load blogs:', err));
+      .catch(err => console.error('Failed to load blogs:', err.message));
   }, []);
 
   return (
@@ -939,16 +1088,41 @@ function App() {
           />
         }
       />
-      {/* Catch-all: redirect unknown routes to home */}
-      <Route path="*" element={<HomeRedirect />} />
+      {/* Catch-all: 404 page */}
+      <Route path="*" element={<NotFoundView />} />
     </Routes>
   );
 }
 
-function HomeRedirect() {
-  const navigate = useNavigate();
-  useEffect(() => { navigate('/', { replace: true }); }, [navigate]);
-  return null;
+// ============================================================
+// 404 NOT FOUND VIEW
+// ============================================================
+function NotFoundView() {
+  return (
+    <div className="not-found-view" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '24px', animation: 'fadeUp 0.6s ease-out forwards', position: 'relative' }}>
+      <Helmet>
+        <title>404 - Room Not Found | Curated Corners</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+
+      {/* Decorative architectural elements */}
+      <div style={{ position: 'absolute', top: '10%', left: '10%', width: '1px', height: '80%', background: 'linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.1), rgba(255,255,255,0))' }}></div>
+      <div style={{ position: 'absolute', top: '10%', right: '10%', width: '1px', height: '80%', background: 'linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.1), rgba(255,255,255,0))' }}></div>
+
+      <h1 style={{ fontSize: 'clamp(6rem, 15vw, 10rem)', margin: '0', fontWeight: 'bold', color: 'transparent', WebkitTextStroke: '2px rgba(255,255,255,0.3)', letterSpacing: '8px' }}>404</h1>
+      
+      <div style={{ background: 'var(--bento-bg)', padding: '40px', borderRadius: '24px', border: '1px solid var(--bento-border)', backdropFilter: 'blur(10px)', marginTop: '-40px', position: 'relative', zIndex: 2, maxWidth: '500px' }}>
+        <h2 style={{ fontSize: '2rem', marginBottom: '16px' }}>This room is empty.</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginBottom: '32px', lineHeight: '1.6' }}>
+          The space you're looking for doesn't exist, has been demolished, or is undergoing a complete architectural redesign.
+        </p>
+        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: 'var(--accent-glow)', color: '#fff', textDecoration: 'none', borderRadius: '100px', fontWeight: 'bold', fontSize: '1rem', transition: 'all 0.3s' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          Return to Foyer
+        </Link>
+      </div>
+    </div>
+  );
 }
 
 export default App;
