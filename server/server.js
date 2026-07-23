@@ -385,7 +385,13 @@ app.get('/api/blogs/slug/:slug', async (req, res) => {
   try {
     const blog = await Blog.findOne({ slug: req.params.slug }).populate('linkedProducts');
     if (!blog) return res.status(404).json({ error: 'Blog not found' });
-    res.json(blog);
+
+    const blogObj = blog.toObject();
+    if (blogObj.image && blogObj.image.startsWith('data:')) {
+      blogObj.image = `/api/blogs/slug/${blogObj.slug || blogObj._id}/image`;
+    }
+
+    res.json(blogObj);
   } catch (error) {
     console.error('Get blog by slug error:', error);
     res.status(500).json({ error: 'Failed to fetch blog' });
