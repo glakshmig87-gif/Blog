@@ -380,10 +380,15 @@ app.get('/api/blogs/slug/:slug/image', async (req, res) => {
   }
 });
 
-// Get a single blog by slug — used for direct URL navigation
+// Get a single blog by slug or ID — used for direct URL navigation
 app.get('/api/blogs/slug/:slug', async (req, res) => {
   try {
-    const blog = await Blog.findOne({ slug: req.params.slug }).populate('linkedProducts');
+    const isObjectId = mongoose.Types.ObjectId.isValid(req.params.slug);
+    const query = isObjectId
+      ? { $or: [{ slug: req.params.slug }, { _id: req.params.slug }] }
+      : { slug: req.params.slug };
+
+    const blog = await Blog.findOne(query).populate('linkedProducts');
     if (!blog) return res.status(404).json({ error: 'Blog not found' });
 
     const blogObj = blog.toObject();
