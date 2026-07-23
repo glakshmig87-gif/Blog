@@ -341,7 +341,7 @@ function ArticleView({ blogs, products = [] }) {
 // ============================================================
 // HOME VIEW — Bento Grid
 // ============================================================
-function HomeView({ blogs, visibleBlogsCount, setVisibleBlogsCount }) {
+function HomeView({ blogs, visibleBlogsCount, setVisibleBlogsCount, loadingBlogs }) {
   // JSON-LD: WebSite Schema
   const websiteSchema = {
     '@context': 'https://schema.org',
@@ -421,13 +421,50 @@ function HomeView({ blogs, visibleBlogsCount, setVisibleBlogsCount }) {
           </header>
 
           <div className="bento-grid">
-            {blogs.slice(0, visibleBlogsCount).map((blog, index) => {
-              const gridClasses = [
-                'box-large', 'box-tall', 'box-small', 'box-small',
-                'box-wide', 'box-small', 'box-tall', 'box-small', 'box-wide'
-              ];
-              const boxClass = gridClasses[index % gridClasses.length];
-              const articleUrl = `/blog/${blog.slug || blog._id}`;
+            {loadingBlogs ? (
+              Array.from({ length: 6 }).map((_, index) => {
+                const gridClasses = [
+                  'box-large', 'box-tall', 'box-small', 'box-small',
+                  'box-wide', 'box-small'
+                ];
+                const boxClass = gridClasses[index % gridClasses.length];
+                return (
+                  <div
+                    key={index}
+                    className={`bento-box ${boxClass}`}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      minHeight: '220px'
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)',
+                        animation: 'skeletonShimmer 1.5s infinite'
+                      }}
+                    />
+                    <div style={{ width: '90px', height: '14px', background: 'rgba(255,255,255,0.08)', borderRadius: '100px', marginBottom: '16px' }} />
+                    <div style={{ width: '75%', height: '24px', background: 'rgba(255,255,255,0.08)', borderRadius: '8px', marginBottom: '10px' }} />
+                    <div style={{ width: '50%', height: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px' }} />
+                  </div>
+                );
+              })
+            ) : (
+              blogs.slice(0, visibleBlogsCount).map((blog, index) => {
+                const gridClasses = [
+                  'box-large', 'box-tall', 'box-small', 'box-small',
+                  'box-wide', 'box-small', 'box-tall', 'box-small', 'box-wide'
+                ];
+                const boxClass = gridClasses[index % gridClasses.length];
+                const articleUrl = `/blog/${blog.slug || blog._id}`;
 
               return (
                 <article
@@ -460,7 +497,8 @@ function HomeView({ blogs, visibleBlogsCount, setVisibleBlogsCount }) {
                   </Link>
                 </article>
               );
-            })}
+            })
+          )}
           </div>
 
           {blogs.length > visibleBlogsCount && (
@@ -1231,6 +1269,7 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
 function App() {
   const [blogs, setBlogs] = useState([]);
   const [products, setProducts] = useState([]);
+  const [loadingBlogs, setLoadingBlogs] = useState(true);
   const [visibleBlogsCount, setVisibleBlogsCount] = useState(9);
   const [visibleProductsCount, setVisibleProductsCount] = useState(6);
 
@@ -1248,8 +1287,14 @@ function App() {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       })
-      .then(data => { if (Array.isArray(data)) setBlogs(data); })
-      .catch(err => console.error('Failed to load blogs:', err.message));
+      .then(data => {
+        if (Array.isArray(data)) setBlogs(data);
+        setLoadingBlogs(false);
+      })
+      .catch(err => {
+        console.error('Failed to load blogs:', err.message);
+        setLoadingBlogs(false);
+      });
   }, []);
 
   return (
@@ -1261,6 +1306,7 @@ function App() {
             blogs={blogs}
             visibleBlogsCount={visibleBlogsCount}
             setVisibleBlogsCount={setVisibleBlogsCount}
+            loadingBlogs={loadingBlogs}
           />
         }
       />

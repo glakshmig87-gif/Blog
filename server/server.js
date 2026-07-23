@@ -340,12 +340,9 @@ app.delete('/api/products/:id', async (req, res) => {
 
 // Get all blogs
 app.get('/api/blogs', async (req, res) => {
-  console.log('GET /api/blogs called');
-  console.time('Get Blogs');
   try {
-    // Exclude content AND image to reduce payload size to practically nothing. The client will lazy-load the image.
-    const blogs = await Blog.find().select('-content -image').sort({ createdAt: 1 });
-    console.timeEnd('Get Blogs');
+    const blogs = await Blog.find().select('-content -image').sort({ createdAt: -1 });
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     res.json(blogs);
   } catch (error) {
     console.error('Get blogs error:', error);
