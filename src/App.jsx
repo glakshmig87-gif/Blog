@@ -517,6 +517,8 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
   const [productSearch, setProductSearch] = useState('');
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isSubmittingBlog, setIsSubmittingBlog] = useState(false);
+  const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
 
   const [newBlog, setNewBlog] = useState({
     title: '',
@@ -623,6 +625,7 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
       alert('Please fill all required blog fields.');
       return;
     }
+    setIsSubmittingBlog(true);
     try {
       const isEditing = !!editingBlogId;
       const url = isEditing ? `/api/blogs/${editingBlogId}` : '/api/blogs';
@@ -652,6 +655,8 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
     } catch (error) {
       console.error('Add/Update blog error:', error);
       alert('Error connecting to database');
+    } finally {
+      setIsSubmittingBlog(false);
     }
   };
 
@@ -711,6 +716,7 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
       alert('Please fill all required fields (Image, Title, Link).');
       return;
     }
+    setIsSubmittingProduct(true);
     try {
       const response = await fetch('/api/products', {
         method: 'POST',
@@ -728,6 +734,8 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
     } catch (error) {
       console.error('Add product error:', error);
       alert('Error connecting to database');
+    } finally {
+      setIsSubmittingProduct(false);
     }
   };
 
@@ -878,8 +886,36 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
               <button type="button" onClick={() => setIsPreviewOpen(true)} style={{ flex: 1, padding: '16px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
                 Preview Article
               </button>
-              <button type="submit" style={{ flex: 1, padding: '16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
-                {editingBlogId ? 'Update Blog' : 'Publish Blog'}
+              <button
+                type="submit"
+                disabled={isSubmittingBlog}
+                style={{
+                  flex: 1,
+                  padding: '16px',
+                  background: isSubmittingBlog ? 'rgba(59, 130, 246, 0.6)' : '#3b82f6',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '100px',
+                  fontWeight: 'bold',
+                  cursor: isSubmittingBlog ? 'not-allowed' : 'pointer',
+                  fontSize: '1.1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px'
+                }}
+              >
+                {isSubmittingBlog ? (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                      <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                      <path d="M12 2a10 10 0 0 1 10 10" />
+                    </svg>
+                    {editingBlogId ? 'Updating Blog...' : 'Publishing Blog...'}
+                  </>
+                ) : (
+                  editingBlogId ? 'Update Blog' : 'Publish Blog'
+                )}
               </button>
               {editingBlogId && (
                 <button type="button" onClick={cancelEditBlog} style={{ flex: 1, padding: '16px', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
@@ -938,8 +974,37 @@ function AdminView({ blogs, setBlogs, products, setProducts }) {
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Schedule Publish Date (Optional)</label>
             <input type="datetime-local" value={newProduct.scheduledFor} onChange={e => setNewProduct({ ...newProduct, scheduledFor: e.target.value })} style={inputStyle} />
 
-            <button type="submit" style={{ width: '100%', padding: '16px', background: 'var(--accent-glow)', color: '#fff', border: 'none', borderRadius: '100px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem', marginTop: '16px' }}>
-              Add Product
+            <button
+              type="submit"
+              disabled={isSubmittingProduct}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: isSubmittingProduct ? 'rgba(142, 161, 149, 0.4)' : 'var(--accent-glow)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '100px',
+                fontWeight: 'bold',
+                cursor: isSubmittingProduct ? 'not-allowed' : 'pointer',
+                fontSize: '1.1rem',
+                marginTop: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px'
+              }}
+            >
+              {isSubmittingProduct ? (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                    <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                    <path d="M12 2a10 10 0 0 1 10 10" />
+                  </svg>
+                  Adding Product...
+                </>
+              ) : (
+                'Add Product'
+              )}
             </button>
           </form>
 
